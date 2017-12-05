@@ -1,8 +1,10 @@
 # Imor
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/imor`. To experiment with that code, run `bin/console` for an interactive prompt.
+A tool for automatical detection/replacement of FactoryGirl's `create` with `build_stubbed`
 
-TODO: Delete this and the text above, and describe your gem
+## TODO
+
+* Do not replace create at examples/contexts titles `it 'usually create payment'`
 
 ## Installation
 
