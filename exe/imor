@@ -3,7 +3,9 @@
 $TT_AUTOFIX_SPECS = true
 
 def successful_run?(spec_name, line = nil)
-  system("bundle exec bin/spring rspec #{spec_name}#{':' + line.to_s if line}")
+  cmd = "bundle exec bin/spring rspec #{spec_name}#{':' + line.to_s if line}"
+  puts "RUN #{cmd}"
+  system(cmd)
 end
 
 def substitute_create(file_name, file_content, symbol_number, offset)
@@ -28,7 +30,7 @@ def check_file(file_name)
   end
 
   file_content = File.read(file_name)
-  create_match_symbol_number = file_content.enum_for(:scan, /\screate[ \(]/).map { Regexp.last_match.begin(0) }
+  create_match_symbol_number = file_content.enum_for(:scan, /\screate([\(]|\s:)/).map { Regexp.last_match.begin(0) }
   succeed_substitutions = []
 
   if create_match_symbol_number.empty?
