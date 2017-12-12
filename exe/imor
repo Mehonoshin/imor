@@ -1,83 +1,13 @@
 #!/usr/bin/env ruby
 
-$TT_AUTOFIX_SPECS = true
+require 'imor'
 
-def successful_run?(spec_name, line = nil)
-  cmd = "bundle exec bin/spring rspec #{spec_name}#{':' + line.to_s if line}"
-  puts "RUN #{cmd}"
-  system(cmd)
-end
-
-def substitute_create(file_name, file_content, symbol_number, offset)
-  new_file_content = file_content[0..(symbol_number + (offset * 7))] + 'build_stubbed' + file_content[(symbol_number + (offset + 1) * 7)..-1]
-  File.write(file_name, new_file_content)
-  new_file_content
-end
-
-$result_file = File.open('log/create_factory_check.log', 'w')
-$result_file.sync = true
-
-
-def calc_line(file_content, symbol_number)
-  file_content[0..symbol_number].scan("\n").size + 1
-end
-
-def check_file(file_name)
-  puts 'preliminary check'
-  unless successful_run?(file_name)
-    $result_file.puts("#{file_name} FAILS")
-    return
-  end
-
-  file_content = File.read(file_name)
-  create_match_symbol_number = file_content.enum_for(:scan, /\screate([\(]|\s:)/).map { Regexp.last_match.begin(0) }
-  succeed_substitutions = []
-
-  if create_match_symbol_number.empty?
-    $result_file.puts("#{file_name} NO CREATE METHODS")
-    return
-  end
-
-  create_match_symbol_number.each do |symbol_number|
-    puts 'Substitute create'
-    new_file_content = substitute_create(file_name, file_content, symbol_number, succeed_substitutions.size)
-    line = calc_line(file_content, symbol_number)
-    puts 'Run spec'
-
-    if successful_run?(file_name, line)
-      succeed_substitutions << symbol_number 
-      file_content = new_file_content if $TT_AUTOFIX_SPECS
-    end
-  end
-
-  File.write(file_name, file_content)
-
-  if succeed_substitutions.count > 0
-    $result_file.puts("#{file_name} POSSIBLE_CHANGES: #{succeed_substitutions}")
-  else
-    $result_file.puts("#{file_name} OK")
-  end
-end
-
-SCANNED_FILE_NAME = 'log/create_factory_scanned.log'
-
-def already_scanned
-  if File.exist?(SCANNED_FILE_NAME)
-    File.readlines(SCANNED_FILE_NAME).map do |line|
-      line =~ /^(\S+\.rb) /
-      $1
-    end
-  else
-    []
-  end
-end
-
-(ARGV - already_scanned).each do |file_name|
+ARGV.each do |file_name|
   if File.directory?(file_name)
     files = Dir["#{file_name}/**/*"].reject {|fn| File.directory?(fn) }
-    files.each { |f| check_file(f) }
+    files.each { |f| Imor::Scanner.new(f).() }
   else
-    check_file(file_name)
+    Imor::Scanner.new(file_name).()
   end
 end
 
